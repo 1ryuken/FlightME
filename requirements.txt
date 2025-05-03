@@ -1,0 +1,12 @@
+# System packages (install with pacman):
+# sudo pacman -S python-flask python-flask-sqlalchemy python-openai python-psycopg2 python-werkzeug python-sqlalchemy chromium
+
+# Pip packages (install with pip):
+gunicorn==23.0.0
+selenium==4.32.0
+trafilatura==2.0.0
+python-dotenv==1.0.0
+email-validator==2.2.0
+
+# Additional packages that might be needed:
+# sudo pacman -S chromium chromedriver  # For Selenium webdriver 
