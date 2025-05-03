@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            <div class="hero-content">
+                <h1 class="mb-3">Find the <span class="highlight">Best Time</span> to Book Your Flight!</h1>
+                <p class="lead mb-4">FlightME uses AI technology to analyze flight prices and predict the best time to book your tickets.</p>
+                
+                <div class="search-form-container">
+                    <form action="{{ url_for('search') }}" method="post" id="flightSearchForm">
+                        <div class="card shadow">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="origin" class="form-label">From</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-plane-departure"></i></span>
+                                        <input type="text" class="form-control" id="origin" name="origin" placeholder="Enter airport code (e.g., JFK)" required maxlength="3">
+                                    </div>
+                                    <small class="form-text">Enter 3-letter airport code (e.g., JFK for New York)</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="destination" class="form-label">To</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-plane-arrival"></i></span>
+                                        <input type="text" class="form-control" id="destination" name="destination" placeholder="Enter airport code (e.g., LAX)" required maxlength="3">
+                                    </div>
+                                    <small class="form-text">Enter 3-letter airport code (e.g., LAX for Los Angeles)</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="date" class="form-label">Travel Date</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                        <input type="date" class="form-control" id="date" name="date" required min="{{ today }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg">Find Best Deals <i class="fas fa-search ms-2"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 d-none d-lg-block">
+            <div class="hero-image-container">
+                <div class="animation-container">
+                    <div class="flying-plane">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <div class="cloud cloud-1"></div>
+                    <div class="cloud cloud-2"></div>
+                    <div class="cloud cloud-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="popular-routes-section mt-5">
+    <h2 class="section-title text-center mb-4">Popular <span class="highlight">Routes</span></h2>
+    <div class="row">
+        {% for route in popular_routes %}
+        <div class="col-md-4 mb-4">
+            <div class="popular-route-card card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="route-info">
+                            <div class="route-codes">
+                                <span class="route-origin">{{ route.origin }}</span>
+                                <i class="fas fa-plane route-plane"></i>
+                                <span class="route-destination">{{ route.destination }}</span>
+                            </div>
+                            <div class="route-cities">
+                                {{ route.origin_city }} to {{ route.destination_city }}
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm mt-3 quick-search-btn" 
+                            data-origin="{{ route.origin }}" 
+                            data-destination="{{ route.destination }}">
+                        Check Prices
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="features-section mt-5">
+    <h2 class="section-title text-center mb-4">How <span class="highlight">FlightME</span> Works</h2>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="feature-card card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-spider"></i>
+                    </div>
+                    <h3 class="feature-title">Data Collection</h3>
+                    <p class="feature-description">We scrape flight prices from multiple airline websites to gather the most comprehensive data.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-card card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="feature-title">AI Analysis</h3>
+                    <p class="feature-description">Our AI analyzes historical price trends and predicts future fare fluctuations with remarkable accuracy.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-card card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3 class="feature-title">Smart Recommendations</h3>
+                    <p class="feature-description">Get personalized recommendations on when to book for the best deal based on your specific travel plans.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').setAttribute('min', today);
+    
+    // Handle quick search buttons
+    const quickSearchButtons = document.querySelectorAll('.quick-search-btn');
+    quickSearchButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const origin = this.getAttribute('data-origin');
+            const destination = this.getAttribute('data-destination');
+            
+            document.getElementById('origin').value = origin;
+            document.getElementById('destination').value = destination;
+            document.getElementById('date').value = today;
+            
+            // Scroll to form
+            document.getElementById('flightSearchForm').scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+    
+    // Force uppercase for airport codes
+    const airportInputs = document.querySelectorAll('#origin, #destination');
+    airportInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    });
+});
+</script>
+{% endblock %}

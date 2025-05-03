@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="search-results-container">
+    <div class="search-summary mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <h1 class="mb-0">Flight Analysis</h1>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-search"></i> New Search
+            </a>
+        </div>
+        <div class="route-display mt-3">
+            <div class="route-codes">
+                <span class="route-origin">{{ origin }}</span>
+                <i class="fas fa-plane route-plane"></i>
+                <span class="route-destination">{{ destination }}</span>
+            </div>
+            <div class="route-date">
+                <i class="fas fa-calendar-alt me-2"></i>{{ date }}
+            </div>
+        </div>
+    </div>
+    
+    {% if is_loading %}
+    <div id="loading-section" class="text-center py-5">
+        <div class="loading-animation">
+            <div class="plane-container">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <div class="loading-text">
+                <h3>Analyzing Flight Prices...</h3>
+                <p class="text-muted">Our AI is gathering and analyzing data from multiple sources.</p>
+                <div class="progress mt-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+                <p class="steps-text mt-2">Scraping flight data...</p>
+            </div>
+        </div>
+    </div>
+    
+    <div id="results-section" class="d-none">
+    {% else %}
+    <div id="results-section">
+    {% endif %}
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4 shadow-sm analysis-card">
+                    <div class="card-header d-flex align-items-center">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <h2 class="card-title h5 mb-0">Price Analysis</h2>
+                        {% if analysis %}
+                        <span class="ms-auto badge trend-badge {{ analysis.price_trend }}">
+                            {{ analysis.price_trend_emoji }} {{ analysis.price_trend|capitalize }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if analysis %}
+                        <div class="analysis-content">
+                            <p class="analysis-text">{{ analysis.analysis }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h2 class="card-title h5 mb-0"><i class="fas fa-chart-area me-2"></i>Historical Price Trend</h2>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="priceHistoryChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card mb-4 shadow-sm recommendation-card">
+                    <div class="card-header">
+                        <h2 class="card-title h5 mb-0"><i class="fas fa-lightbulb me-2"></i>Recommendation</h2>
+                    </div>
+                    <div class="card-body">
+                        {% if analysis %}
+                        <div class="recommendation-icon text-center mb-3">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h3 class="recommendation-title text-center">Best Time to Book</h3>
+                        <div class="best-time-display text-center mb-3">
+                            {{ analysis.best_time_to_book }}
+                        </div>
+                        <p class="recommendation-text">{{ analysis.recommendation }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h2 class="card-title h5 mb-0"><i class="fas fa-info-circle me-2"></i>About This Analysis</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted">
+                            This analysis is powered by AI and based on real-time flight pricing data from multiple sources.
+                            While we strive for accuracy, prices and availability can change rapidly.
+                        </p>
+                        {% if analysis and analysis.created_at %}
+                        <p class="small text-muted">
+                            Analysis generated: {{ analysis.created_at.strftime('%Y-%m-%d %H:%M UTC') if analysis.created_at is not string else analysis.created_at }}
+                        </p>
+                        {% endif %}
+                        <div class="d-grid mt-3">
+                            <button id="refreshButton" class="btn btn-outline-primary">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh Analysis
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isLoading = {{ 'true' if is_loading else 'false' }};
+    const origin = "{{ origin }}";
+    const destination = "{{ destination }}";
+    const date = "{{ date }}";
+    let priceHistoryChart;
+    
+    if (isLoading) {
+        // Animate the progress bar
+        const progressBar = document.querySelector('.progress-bar');
+        const stepsText = document.querySelector('.steps-text');
+        const steps = [
+            "Scraping flight data...",
+            "Gathering historical prices...",
+            "Analyzing price patterns...",
+            "Generating recommendations...",
+            "Almost done!"
+        ];
+        
+        let currentStep = 0;
+        const progressInterval = setInterval(function() {
+            const progress = ((currentStep + 1) / steps.length) * 100;
+            progressBar.style.width = progress + '%';
+            
+            if (steps[currentStep]) {
+                stepsText.textContent = steps[currentStep];
+            }
+            
+            currentStep++;
+            
+            if (currentStep >= steps.length) {
+                clearInterval(progressInterval);
+            }
+        }, 1500);
+        
+        // Fetch the analysis data
+        fetchAnalysisData();
+    } else {
+        // If we already have analysis, just load the chart
+        fetchHistoricalData();
+    }
+    
+    // Function to fetch analysis data
+    function fetchAnalysisData() {
+        fetch(`/api/analyze?origin=${origin}&destination=${destination}&date=${date}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                // Hide loading section and show results
+                document.getElementById('loading-section').classList.add('d-none');
+                document.getElementById('results-section').classList.remove('d-none');
+                
+                // Update the analysis card
+                updateAnalysisCard(data);
+                
+                // Fetch and display historical data for the chart
+                fetchHistoricalData();
+            })
+            .catch(error => {
+                console.error('Error fetching analysis:', error);
+                showError('Failed to analyze flight prices. Please try again.');
+            });
+    }
+    
+    // Function to fetch historical price data for the chart
+    function fetchHistoricalData() {
+        fetch(`/api/historical?origin=${origin}&destination=${destination}&date=${date}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    console.error('Error in historical data:', data.error);
+                    return;
+                }
+                
+                createPriceHistoryChart(data.dates, data.prices);
+            })
+            .catch(error => {
+                console.error('Error fetching historical data:', error);
+            });
+    }
+    
+    // Function to update the analysis card with data
+    function updateAnalysisCard(data) {
+        const analysisCard = document.querySelector('.analysis-card');
+        const recommendationCard = document.querySelector('.recommendation-card');
+        
+        // Update price trend badge
+        const trendBadge = document.createElement('span');
+        trendBadge.className = `ms-auto badge trend-badge ${data.price_trend}`;
+        trendBadge.innerHTML = `${data.price_trend_emoji} ${data.price_trend.charAt(0).toUpperCase() + data.price_trend.slice(1)}`;
+        
+        // Update analysis text
+        const analysisText = document.createElement('p');
+        analysisText.className = 'analysis-text';
+        analysisText.textContent = data.analysis;
+        
+        // Clear and update the analysis content
+        const analysisContent = analysisCard.querySelector('.analysis-content');
+        if (analysisContent) {
+            analysisContent.innerHTML = '';
+            analysisContent.appendChild(analysisText);
+        } else {
+            const newAnalysisContent = document.createElement('div');
+            newAnalysisContent.className = 'analysis-content';
+            newAnalysisContent.appendChild(analysisText);
+            analysisCard.querySelector('.card-body').appendChild(newAnalysisContent);
+        }
+        
+        // Update the badge
+        const existingBadge = analysisCard.querySelector('.trend-badge');
+        if (existingBadge) {
+            existingBadge.replaceWith(trendBadge);
+        } else {
+            analysisCard.querySelector('.card-header').appendChild(trendBadge);
+        }
+        
+        // Update recommendation card
+        const recommendationBody = recommendationCard.querySelector('.card-body');
+        recommendationBody.innerHTML = `
+            <div class="recommendation-icon text-center mb-3">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="recommendation-title text-center">Best Time to Book</h3>
+            <div class="best-time-display text-center mb-3">
+                ${data.best_time_to_book}
+            </div>
+            <p class="recommendation-text">${data.recommendation}</p>
+        `;
+        
+        // Update analysis timestamp
+        const timestampElement = document.querySelector('.card-body p.small:last-of-type');
+        if (timestampElement) {
+            const timestamp = new Date(data.created_at);
+            timestampElement.textContent = `Analysis generated: ${timestamp.toLocaleString()}`;
+        }
+    }
+    
+    // Function to create the price history chart
+    function createPriceHistoryChart(dates, prices) {
+        const ctx = document.getElementById('priceHistoryChart').getContext('2d');
+        
+        // If chart already exists, destroy it before creating a new one
+        if (priceHistoryChart) {
+            priceHistoryChart.destroy();
+        }
+        
+        // Create gradient for the chart
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, 'rgba(255, 222, 0, 0.6)');
+        gradient.addColorStop(1, 'rgba(255, 222, 0, 0.1)');
+        
+        priceHistoryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Price (USD)',
+                    data: prices,
+                    backgroundColor: gradient,
+                    borderColor: '#FFDE00',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#FFDE00',
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `Price: $${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(200, 200, 200, 0.1)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Function to show error messages
+    function showError(message) {
+        document.getElementById('loading-section').classList.add('d-none');
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger';
+        errorDiv.textContent = message;
+        
+        const container = document.querySelector('.search-results-container');
+        container.insertBefore(errorDiv, document.getElementById('results-section'));
+    }
+    
+    // Handle refresh button click
+    document.getElementById('refreshButton')?.addEventListener('click', function() {
+        window.location.reload();
+    });
+});
+</script>
+{% endblock %}
