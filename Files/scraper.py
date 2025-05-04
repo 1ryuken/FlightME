@@ -57,16 +57,16 @@ class FlightScraper:
             time.sleep(random.uniform(2.0, 4.0))
             
             # Extract flight data
-            flight_elements = self.driver.find_elements(By.CSS_SELECTOR, "div[class*='inner-grid']")
+            flight_elements = self.driver.find_elements(By.CSS_SELECTOR, "div[class*='resultInner']")
             results = []
             
             for element in flight_elements[:10]:  # Limit to first 10 results
                 try:
-                    airline = element.find_element(By.CSS_SELECTOR, "div[class*='carrier-name']").text
+                    airline = element.find_element(By.CSS_SELECTOR, "div[class*='codes']").text
                     price_elem = element.find_element(By.CSS_SELECTOR, "div[class*='price-text']")
                     price_text = price_elem.text.replace('$', '').replace(',', '')
                     price = float(price_text)
-                    departure_time = element.find_element(By.CSS_SELECTOR, "div[class*='depart-time']").text
+                    departure_time = element.find_element(By.CSS_SELECTOR, "span[class*='depart-time']").text
                     flight_duration = element.find_element(By.CSS_SELECTOR, "div[class*='duration']").text
                     
                     results.append({
@@ -103,19 +103,19 @@ class FlightScraper:
             
             # Wait for the price elements to load
             wait = WebDriverWait(self.driver, 30)
-            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-test-id='price-column']")))
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-test-id='listing-price']")))
             
             # Add a short random delay to avoid detection
             time.sleep(random.uniform(3.0, 5.0))
             
             # Extract flight data
-            flight_elements = self.driver.find_elements(By.CSS_SELECTOR, "li[data-test-id='offer-listing']")
+            flight_elements = self.driver.find_elements(By.CSS_SELECTOR, "div[data-test-id='offer-listing']")
             results = []
             
             for element in flight_elements[:10]:  # Limit to first 10 results
                 try:
                     airline = element.find_element(By.CSS_SELECTOR, "span[data-test-id='airline-name']").text
-                    price_elem = element.find_element(By.CSS_SELECTOR, "div[data-test-id='price-column'] span.uitk-text-emphasis")
+                    price_elem = element.find_element(By.CSS_SELECTOR, "div[data-test-id='listing-price'] span.uitk-text-emphasis")
                     price_text = price_elem.text.replace('$', '').replace(',', '')
                     price = float(price_text)
                     departure_time = element.find_element(By.CSS_SELECTOR, "span[data-test-id='departure-time']").text
