@@ -2,3 +2,5 @@ code.c
 code.sh
 code.py
 plan.md
+__pycache__
+.env
