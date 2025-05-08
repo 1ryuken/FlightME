@@ -152,23 +152,10 @@ class SherpaVisaScraper:
             destination=destination.lower().replace(" ", "-")
         )
         
-        # --- IMPORTANT: This is a placeholder for actual web scraping ---
-        # In a real scenario, the _make_request and _parse_visa_info methods
-        # would perform live web requests and parse HTML.
-        # For this example, we'll simulate the process.
-        
-        # Simulate a network request (replace with actual _make_request call)
-        # response = self._make_request(target_url)
-        # html_content = response.text if response else None
-        
-        # Simulate HTML content (as if fetched from the web)
-        # This is where you'd put example HTML if you were testing parsing locally.
-        # For now, we'll pass None and let _parse_visa_info use simulated logic.
+
         simulated_html_content = f"<html><body>Mock content for {nationality} to {destination}</body></html>"
         
-        # Parse the information
-        # In a real implementation: visa_data = self._parse_visa_info(html_content, nationality, destination)
-        # Using simulated parsing for this example:
+ 
         visa_data = self._parse_visa_info(simulated_html_content, nationality, destination) # Pass simulated content
         
         if visa_data:
