@@ -32,7 +32,7 @@ class PassportIndexVisaScraper:
         nationality = nationality.strip()
         destination = destination.strip()
         logger.info(f"Searching for visa requirements from {nationality} to {destination}")
-        
+
         with open(data_file, newline='', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             
@@ -84,7 +84,7 @@ class PassportIndexVisaScraper:
                         logger.info(f"Found match: {result}")
                         self._save_to_json(result)
                         return result
-            
+
             if not found_nationality:
                 logger.error(f"No entries found for nationality: {nationality}")
             elif not found_destination:
@@ -99,7 +99,7 @@ class PassportIndexVisaScraper:
                 if available_destinations:
                     raise ValueError(f"Destination '{destination}' not found for {nationality}. Available destinations include: {sorted(list(available_destinations))[:5]}...")
             
-            raise ValueError(f"No visa requirement data found for {nationality} to {destination}.")
+        raise ValueError(f"No visa requirement data found for {nationality} to {destination}.")
 
     def _save_to_json(self, data, filename="visa_data.json"):
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -113,4 +113,4 @@ class PassportIndexVisaScraper:
                 json.dump(content, f, indent=2)
         else:
             with open(path, "w", encoding="utf-8") as f:
-                json.dump([data], f, indent=2)
+                json.dump([data], f, indent=2) 

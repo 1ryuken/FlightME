@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Query, HTTPException
 from visa.passportindex_scraper import PassportIndexVisaScraper
+from hotels.booking_scraper import BookingScraper
 import uvicorn
 
 app = FastAPI(
@@ -36,6 +37,26 @@ async def get_visa_requirements(
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+@app.get("/hotels/")
+async def get_hotels(
+    location: str = Query(..., description="City or location to search for hotels (e.g., 'Paris', 'New York')")
+):
+    """
+    Get hotel information for a specific location.
+    
+    Parameters:
+    - location: City or location to search for hotels
+    
+    Returns:
+    - JSON array containing hotel information including name, price, rating, and booking link
+    """
+    try:
+        hotel_scraper = BookingScraper(location)
+        hotels = hotel_scraper.fetch_hotels()
+        return hotels
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred while fetching hotels: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
